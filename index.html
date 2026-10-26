@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Blind Pours</title>
+<meta name="theme-color" content="#3b2c22">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one narrow column like a tasting notebook; shelf tabs on top, sample "labels" as cards, a bottom sheet for detail. */
+:root{
+  --bg:#f3f1ee; --surface:#fffdfa; --ink:#231c16; --muted:#6f655c; --line:#ddd6ce;
+  --amber:#a8560f; --amber-ink:#fff8f0; --char:#3b2c22;
+  --ok:#2f6f4f; --warn:#8a5a00; --danger:#a3352a; --scrim:rgba(20,14,10,.45);
+  --display:"Zilla Slab",Rockwell,"Roboto Slab",Georgia,serif;
+  --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#17120e; --surface:#211a15; --ink:#f1e7dc; --muted:#a8998a; --line:#3a2f27;
+  --amber:#e09347; --amber-ink:#1d130b; --char:#e8d7c4;
+  --ok:#6cc39a; --warn:#e4b04f; --danger:#ef7c6f; --scrim:rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17120e; --surface:#211a15; --ink:#f1e7dc; --muted:#a8998a; --line:#3a2f27;
+  --amber:#e09347; --amber-ink:#1d130b; --char:#e8d7c4;
+  --ok:#6cc39a; --warn:#e4b04f; --danger:#ef7c6f; --scrim:rgba(0,0,0,.6); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 96px}
+.wrap{max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:2rem;font-weight:700;letter-spacing:.01em}
+header p{margin:4px 0 0;color:var(--muted);font-size:.95rem}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.tab{flex:1 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  border-radius:999px;padding:8px 14px;font:600 .9rem var(--body);cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--char);color:var(--bg);border-color:var(--char)}
+.tab .n{font-family:var(--mono);font-size:.8rem;opacity:.75;margin-left:6px}
+.list{display:flex;flex-direction:column;gap:10px}
+.card{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;text-align:left;width:100%;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--ink);font:inherit;cursor:pointer}
+.card:focus-visible,.btn:focus-visible,.tab:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.card .main{min-width:0}
+.card .t{font-weight:700;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.code{font-family:var(--mono);font-size:.82rem;color:var(--muted)}
+.card .sub{color:var(--muted);font-size:.88rem}
+.secret{color:var(--amber);font-weight:600;font-size:.92rem;overflow-wrap:anywhere}
+.dot{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:700 .85rem var(--display);
+  color:#fff;border:2px solid rgba(0,0,0,.15);text-shadow:0 1px 1px rgba(0,0,0,.35);flex:none}
+.pill{font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.pill.with{color:var(--muted)} .pill.tasted{color:var(--warn)} .pill.revealed{color:var(--ok)}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:22px;color:var(--muted);text-align:center}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:10px 14px;font:600 .95rem var(--body);cursor:pointer}
+.btn.primary{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:5}
+.note{font-size:.88rem;color:var(--muted)}
+.banner{border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.sheet-bg{position:fixed;inset:0;background:var(--scrim);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:620px;max-height:92vh;overflow-y:auto;border-radius:16px 16px 0 0;
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  display:flex;flex-direction:column;gap:16px}
+.sheet-head{display:flex;gap:12px;align-items:center}
+.sheet-head .x{margin-left:auto}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.lbl{font-size:.78rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+textarea{min-height:110px;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 140px;min-width:0}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.sw{width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+.sw[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 2px var(--bg) inset}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.box .secret{font-size:1.05rem}
+.read{white-space:pre-wrap;overflow-wrap:anywhere}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.confirm{border:1px solid var(--amber);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.status{font-size:.88rem;color:var(--muted);min-height:1.2em}
+.reveal-name{font-family:var(--display);font-size:1.15rem;font-weight:700;color:var(--ok)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
+</style>
+<style>
+html{-webkit-text-size-adjust:100%}
+body{margin:0;padding-top:max(20px,env(safe-area-inset-top,0px))}
+[hidden]{display:none!important}
+.top{display:flex;align-items:flex-start;gap:12px}
+.top .who{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:.85rem;color:var(--muted)}
+.link{background:none;border:0;padding:0;color:var(--amber);font:600 .85rem var(--body);cursor:pointer;text-decoration:underline}
+.gate{display:flex;flex-direction:column;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.gate p{margin:0}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Blind Pours</h1>
+      <p id="sub">Shared sample shelf. Each of you only sees the bottles you poured until you reveal them.</p>
+    </div>
+    <div class="who" id="who" hidden><span id="whoName"></span><button class="link" id="signOut">Sign out</button></div>
+  </header>
+
+  <div id="gate" class="gate" hidden>
+    <p id="gateMsg">Sign in with the Google account you and your tasting partner agreed on.</p>
+    <button class="btn primary" id="signIn">Sign in with Google</button>
+    <div class="status" id="gateStatus"></div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" id="tab-theirs" data-tab="theirs" aria-selected="true"><span class="lbltext">They have</span><span class="n" id="n-theirs">0</span></button>
+      <button class="tab" role="tab" id="tab-mine" data-tab="mine" aria-selected="false"><span class="lbltext">I have</span><span class="n" id="n-mine">0</span></button>
+      <button class="tab" role="tab" id="tab-log" data-tab="log" aria-selected="false"><span class="lbltext">Revealed</span><span class="n" id="n-log">0</span></button>
+    </div>
+    <div class="list" id="list" style="margin-top:18px"><div class="empty">Loading the shelf…</div></div>
+  </div>
+</div>
+<button class="btn primary fab" id="addBtn" hidden>+ Log a sample I'm giving</button>
+<div id="sheetRoot"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const COLORS=[["Blue","#2f6db5"],["Green","#2f8a4c"],["Red","#c0392b"],["Yellow","#d4a017"],["Orange","#e07020"],["Purple","#7b4bb3"],["Pink","#d6568f"],["Black","#2b2b2b"],["Silver","#8d9399"]];
+const FORMATS=["Solo pour","Head-to-head (two samples)","Versus one of our bottles"];
+const S={me:null,myName:"",samples:[],keys:{},members:{},tab:"theirs",openId:null,unsubs:[]};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const fmtDate=s=>{if(!s)return"";const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})};
+const first=n=>(n||"").trim().split(/\s+/)[0];
+function getTab(){try{return localStorage.getItem("bp-tab")}catch(e){return null}}
+function setTabStore(t){try{localStorage.setItem("bp-tab",t)}catch(e){}}
+const errText=e=>e&&e.code==="permission-denied"?"This Google account isn't allowed to change that.":(e&&(e.message||e.code))||"unknown error";
+
+if(!window.FIREBASE_CONFIG){
+  $("gate").hidden=false;$("signIn").hidden=true;
+  $("gateMsg").textContent="Almost ready. The Firebase project hasn't been connected yet, so sign-in is turned off.";
+  throw new Error("No Firebase config");
+}
+const fb=initializeApp(window.FIREBASE_CONFIG);
+const auth=getAuth(fb);
+const db=getFirestore(fb);
+
+function otherId(){return Object.keys(S.members).find(id=>id!==S.me)||S.samples.map(s=>s.giverId).find(id=>id&&id!==S.me)||null}
+function otherName(){const id=otherId();return (id&&first(S.members[id]?.name))||"your friend"}
+function nameOf(id){return id===S.me?"You":(first(S.members[id]?.name)||"Your friend")}
+function bottleFor(s){return s.bottle||(s.giverId===S.me?(S.keys[s.id]?.bottle||""):"")}
+function dot(s){const c=(COLORS.find(c=>c[0]===s.stickerColor)||["","#777"])[1];
+  return `<span class="dot" style="background:${esc(s.stickerHex||c)}" aria-hidden="true">${esc((s.stickerText||"").slice(0,3))}</span>`}
+function stickerName(s){return [s.stickerColor,s.stickerText].filter(Boolean).join(" ")||"Unlabeled"}
+function pill(s){const t={with:"Unopened",tasted:"Tasted",revealed:"Revealed"}[s.status]||"Unopened";return `<span class="pill ${esc(s.status||"with")}">${t}</span>`}
+
+function render(){
+  const theirs=S.samples.filter(s=>s.giverId===S.me&&s.status!=="revealed");
+  const mine=S.samples.filter(s=>s.giverId!==S.me&&s.status!=="revealed");
+  const log=S.samples.filter(s=>s.status==="revealed").sort((a,b)=>(b.revealedAt||0)-(a.revealedAt||0));
+  const on=otherName();
+  document.querySelector("#tab-theirs .lbltext").textContent=otherId()?`${on[0].toUpperCase()+on.slice(1)} has`:"They have";
+  $("n-theirs").textContent=theirs.length;$("n-mine").textContent=mine.length;$("n-log").textContent=log.length;
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===S.tab)));
+  const rows={theirs,mine,log}[S.tab];
+  const L=$("list");
+  if(!rows.length){
+    L.innerHTML=`<div class="empty">${{
+      theirs:"No samples out with your friend. Tap <b>Log a sample I'm giving</b> when you fill and label one.",
+      mine:"Nothing waiting on your shelf. Samples your friend logs for you show up here, with the sticker only.",
+      log:"Nothing revealed yet. After a tasting, whoever poured the sample taps Reveal."}[S.tab]}</div>`;return}
+  L.innerHTML=rows.map(s=>{
+    const b=bottleFor(s);let sub="";
+    if(S.tab==="theirs")sub=`<div class="secret">${b?esc(b):"<i>No bottle saved</i>"}</div><div class="sub">Given ${esc(fmtDate(s.givenOn))}</div>`;
+    else if(S.tab==="mine")sub=`<div class="sub">From ${esc(nameOf(s.giverId))} · ${esc(fmtDate(s.givenOn))}</div>`;
+    else sub=`<div class="secret">${esc(b)}</div><div class="sub">Poured by ${esc(nameOf(s.giverId))}${s.tastedOn?" · tasted "+esc(fmtDate(s.tastedOn)):""}</div>`;
+    return `<button class="card" data-id="${esc(s.id)}">${dot(s)}<div class="main"><div class="t">${esc(stickerName(s))}<span class="code">${esc(s.code||"")}</span></div>${sub}</div>${pill(s)}</button>`}).join("");
+}
+
+$("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(!b)return;S.tab=b.dataset.tab;setTabStore(S.tab);render()});
+$("list").addEventListener("click",e=>{const c=e.target.closest(".card");if(c)openDetail(c.dataset.id)});
+$("addBtn").addEventListener("click",openAdd);
+
+function closeSheet(){$("sheetRoot").innerHTML="";S.openId=null}
+function sheet(html){
+  $("sheetRoot").innerHTML=`<div class="sheet-bg" id="sheetBg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  $("sheetBg").addEventListener("click",e=>{if(e.target.id==="sheetBg")closeSheet()});
+  document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeSheet));
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
+
+function nextCode(){
+  const ini=(S.myName||"?").trim().charAt(0).toUpperCase()||"?";
+  const nums=S.samples.filter(s=>s.giverId===S.me).map(s=>parseInt(String(s.code||"").split("-")[1],10)).filter(n=>!isNaN(n));
+  return ini+"-"+String((nums.length?Math.max(...nums):0)+1).padStart(2,"0");
+}
+const keyRef=id=>doc(db,"members",S.me,"keys",id);
+
+function openAdd(){
+  let color="Blue";
+  sheet(`<div class="sheet-head"><h2>Log a sample</h2><button class="btn x" data-close>Close</button></div>
+  <p class="note">${esc(otherName()[0].toUpperCase()+otherName().slice(1))} sees the sticker and code. The bottle stays private to you until you reveal it.</p>
+  <div class="field"><span class="lbl">Sticker color</span><div class="swatches" id="sw">${COLORS.map(([n,h])=>`<button class="sw" type="button" title="${n}" aria-label="${n}" aria-pressed="${n===color}" data-c="${n}" style="background:${h}"></button>`).join("")}</div></div>
+  <div class="row">
+    <div class="field"><label for="f-text">Sticker mark</label><input id="f-text" placeholder="A, flower, star…" maxlength="20"></div>
+    <div class="field"><label for="f-code">Sample code</label><input id="f-code" value="${esc(nextCode())}" maxlength="10"></div>
+  </div>
+  <div class="field"><label for="f-bottle">Bottle (only you see this)</label><input id="f-bottle" placeholder="1792 Single Barrel"></div>
+  <div class="field"><label for="f-details">Private details</label><input id="f-details" placeholder="Proof, barrel #, store pick, price"></div>
+  <div class="field"><label for="f-date">Date given</label><input id="f-date" type="date" value="${today()}"></div>
+  <div class="status" id="f-status"></div>
+  <button class="btn primary" id="f-save">Save sample</button>`);
+  $("sw").addEventListener("click",e=>{const b=e.target.closest(".sw");if(!b)return;color=b.dataset.c;
+    document.querySelectorAll(".sw").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))});
+  $("f-save").addEventListener("click",async()=>{
+    const bottle=$("f-bottle").value.trim(),text=$("f-text").value.trim();
+    if(!text){$("f-status").textContent="Add the sticker mark so you can both find it.";return}
+    if(!bottle){$("f-status").textContent="Add the bottle name so you can reveal it later.";return}
+    $("f-save").disabled=true;$("f-status").textContent="Saving…";
+    try{
+      const hex=COLORS.find(c=>c[0]===color)[1];
+      const ref=await addDoc(collection(db,"samples"),{code:$("f-code").value.trim(),stickerColor:color,stickerHex:hex,stickerText:text,
+        giverId:S.me,givenOn:$("f-date").value||today(),status:"with",createdAt:Date.now()});
+      await setDoc(keyRef(ref.id),{bottle,details:$("f-details").value.trim()});
+      closeSheet();S.tab="theirs";render();
+    }catch(e){$("f-save").disabled=false;$("f-status").textContent="Couldn't save: "+errText(e)}
+  });
+}
+
+function openDetail(id){
+  const s=S.samples.find(x=>x.id===id);if(!s)return;S.openId=id;
+  const mineGiven=s.giverId===S.me, key=S.keys[id]||{}, other=mineGiven?otherId():s.giverId;
+  const myNote=s["note_"+S.me]||"", theirNote=other?(s["note_"+other]||""):"";
+  const b=bottleFor(s);
+  let bottleBox="";
+  if(s.status==="revealed")bottleBox=`<div class="box"><span class="lbl">Revealed</span><div class="reveal-name">${esc(b)}</div>${mineGiven&&key.details?`<div class="note">${esc(key.details)}</div>`:""}</div>`;
+  else if(mineGiven)bottleBox=`<div class="box"><span class="lbl">Bottle · only you can see this</span>
+    <input id="d-bottle" value="${esc(key.bottle||"")}" placeholder="Bottle name" aria-label="Bottle name"><input id="d-details" value="${esc(key.details||"")}" placeholder="Proof, barrel #, price" aria-label="Private details">
+    <div class="actions"><button class="btn" id="d-savekey">Save bottle</button></div></div>`;
+  else bottleBox=`<div class="box"><span class="lbl">Bottle</span><div class="note">Hidden until ${esc(nameOf(s.giverId))} reveals it.</div></div>`;
+
+  sheet(`<div class="sheet-head">${dot(s)}<div><h2>${esc(stickerName(s))}</h2><div class="code">${esc(s.code||"")} · from ${esc(nameOf(s.giverId))} · ${esc(fmtDate(s.givenOn))}</div></div><button class="btn x" data-close>Close</button></div>
+  ${bottleBox}
+  <div class="row">
+    <div class="field"><label for="d-format">Tasting format</label><select id="d-format"><option value="">Not tasted yet</option>${FORMATS.map(f=>`<option ${s.format===f?"selected":""}>${f}</option>`).join("")}</select></div>
+    <div class="field"><label for="d-tasted">Tasted on</label><input id="d-tasted" type="date" value="${esc(s.tastedOn||"")}"></div>
+  </div>
+  <div class="field"><label for="d-paired">Paired with</label><input id="d-paired" value="${esc(s.pairedWith||"")}" placeholder="Other sample code or bottle"></div>
+  <div class="field"><label for="d-note">My notes</label><textarea id="d-note" placeholder="Nose, palate, finish, guess…">${esc(myNote)}</textarea>
+    <div class="note">From your notebook: on iPhone, tap this box, tap again and choose <b>Scan Text</b>, or use Live Text on the photo. On Android, open the photo in Google Photos, tap <b>Lens</b>, then copy the text and paste it here.</div></div>
+  ${other?`<div class="box"><span class="lbl">${esc(nameOf(other))}'s notes</span><div class="read">${theirNote?esc(theirNote):'<span class="note">No notes yet.</span>'}</div></div>`:""}
+  <div class="status" id="d-status"></div>
+  <div class="actions"><button class="btn primary" id="d-save">Save tasting</button>
+    ${mineGiven&&s.status!=="revealed"?`<button class="btn" id="d-reveal">Reveal to ${esc(otherName())}</button>`:""}
+    ${mineGiven&&s.status==="revealed"?`<button class="btn" id="d-unreveal">Hide again</button>`:""}
+    ${mineGiven?`<button class="btn danger" id="d-del">Delete</button>`:""}</div>
+  <div id="d-confirm"></div>`);
+
+  const st=$("d-status"), sref=doc(db,"samples",id);
+  const fail=e=>{st.textContent="Couldn't save: "+errText(e)};
+  $("d-save").addEventListener("click",async()=>{
+    const fmt=$("d-format").value, tasted=$("d-tasted").value||(fmt?today():"");
+    const upd={format:fmt,tastedOn:tasted,pairedWith:$("d-paired").value.trim(),["note_"+S.me]:$("d-note").value};
+    if(s.status!=="revealed"&&fmt&&s.status!=="tasted")upd.status="tasted";
+    st.textContent="Saving…";try{await updateDoc(sref,upd);st.textContent="Saved."}catch(e){fail(e)}});
+  if($("d-savekey"))$("d-savekey").addEventListener("click",async()=>{st.textContent="Saving…";
+    try{await setDoc(keyRef(id),{bottle:$("d-bottle").value.trim(),details:$("d-details").value.trim()});st.textContent="Bottle saved."}catch(e){fail(e)}});
+  if($("d-reveal"))$("d-reveal").addEventListener("click",()=>{
+    const name=(S.keys[id]||{}).bottle;
+    if(!name){st.textContent="Save the bottle name first, then reveal.";return}
+    $("d-confirm").innerHTML=`<div class="confirm"><div>Show <b>${esc(name)}</b> to ${esc(otherName())}?</div><div class="actions"><button class="btn primary" id="c-yes">Reveal</button><button class="btn" id="c-no">Not yet</button></div></div>`;
+    $("c-no").onclick=()=>$("d-confirm").innerHTML="";
+    $("c-yes").onclick=async()=>{try{await updateDoc(sref,{status:"revealed",bottle:name,revealedAt:Date.now(),tastedOn:s.tastedOn||$("d-tasted").value||today()});closeSheet();S.tab="log";render()}catch(e){fail(e)}};
+  });
+  if($("d-unreveal"))$("d-unreveal").addEventListener("click",async()=>{try{await updateDoc(sref,{status:s.format?"tasted":"with",bottle:""});closeSheet()}catch(e){fail(e)}});
+  if($("d-del"))$("d-del").addEventListener("click",()=>{
+    $("d-confirm").innerHTML=`<div class="confirm"><div>Delete ${esc(stickerName(s))} (${esc(s.code||"")}) and both sets of notes?</div><div class="actions"><button class="btn danger" id="c-yes">Delete</button><button class="btn" id="c-no">Keep it</button></div></div>`;
+    $("c-no").onclick=()=>$("d-confirm").innerHTML="";
+    $("c-yes").onclick=async()=>{try{await deleteDoc(sref);try{await deleteDoc(keyRef(id))}catch(e){}closeSheet()}catch(e){fail(e)}};
+  });
+}
+
+// ---- Auth ----
+$("signIn").addEventListener("click",async()=>{
+  $("gateStatus").textContent="";
+  const p=new GoogleAuthProvider();p.setCustomParameters({prompt:"select_account"});
+  try{await signInWithPopup(auth,p)}
+  catch(e){
+    if(["auth/popup-blocked","auth/operation-not-supported-in-this-environment","auth/web-storage-unsupported"].includes(e.code)){try{await signInWithRedirect(auth,p)}catch(e2){$("gateStatus").textContent="Sign-in failed: "+errText(e2)}}
+    else if(e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")$("gateStatus").textContent="Sign-in failed: "+errText(e);
+  }
+});
+$("signOut").addEventListener("click",()=>signOut(auth));
+
+function stopListening(){S.unsubs.forEach(u=>{try{u()}catch(e){}});S.unsubs=[]}
+function showGate(msg){
+  stopListening();closeSheet();
+  $("app").hidden=true;$("addBtn").hidden=true;$("who").hidden=!auth.currentUser;
+  $("gate").hidden=false;$("signIn").hidden=false;
+  if(msg)$("gateMsg").textContent=msg;
+}
+
+onAuthStateChanged(auth,async u=>{
+  if(!u){S.me=null;showGate("Sign in with the Google account you and your tasting partner agreed on.");return}
+  S.me=u.uid;S.myName=u.displayName||u.email||"";
+  $("whoName").textContent=u.email||u.displayName||"";$("who").hidden=false;
+  try{await setDoc(doc(db,"members",u.uid),{name:u.displayName||"",email:(u.email||"").toLowerCase(),lastSeen:serverTimestamp()},{merge:true})}
+  catch(e){
+    if(e.code==="permission-denied"){showGate(`${u.email} isn't on this shelf's guest list. Sign out and use the Google account Tyler added.`);$("signIn").hidden=true;return}
+    showGate("Couldn't reach the shelf: "+errText(e));return;
+  }
+  $("gate").hidden=true;$("app").hidden=false;$("addBtn").hidden=false;
+  const t=getTab();if(t&&["theirs","mine","log"].includes(t))S.tab=t;
+  stopListening();
+  S.unsubs.push(onSnapshot(collection(db,"members"),snap=>{const m={};snap.docs.forEach(d=>m[d.id]=d.data());S.members=m;render()},()=>{}));
+  S.unsubs.push(onSnapshot(collection(db,"samples"),snap=>{
+    S.samples=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    render();if(S.openId&&!S.samples.find(x=>x.id===S.openId))closeSheet();
+  },e=>{$("list").innerHTML=`<div class="empty">Couldn't load the shelf (${esc(e.code)}). Reload to try again.</div>`}));
+  S.unsubs.push(onSnapshot(collection(db,"members",u.uid,"keys"),snap=>{const k={};snap.docs.forEach(d=>k[d.id]=d.data());S.keys=k;render()},()=>{}));
+});
+</script>
+</body>
+</html>
