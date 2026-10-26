@@ -2,48 +2,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Only these two Google accounts can use the shelf. Use lowercase.
     function allowed() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email.lower() in ['TYLER_EMAIL', 'BEN_EMAIL'];
+        && request.auth.token.email.lower() in ['tyler.dresbach@gmail.com', 'hiteben7@gmail.com'];
     }
     function me() { return request.auth.uid; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
-    // Names, so the app can say "Ben has" instead of "they have".
     match /members/{uid} {
       allow read: if allowed();
       allow write: if allowed() && uid == me();
 
-      // Bottle names. Only the person who poured can ever read these.
-      match /keys/{sampleId} {
+      // Bottle names: only the person who poured can read these.
+      match /keys/{keyId} {
         allow read, write: if allowed() && uid == me();
       }
     }
 
-    // Shared samples: sticker, code, status, notes. No bottle name until reveal.
     match /samples/{id} {
       allow read: if allowed();
-
       allow create: if allowed()
         && request.resource.data.giverId == me()
         && request.resource.data.status == 'with'
         && !('bottle' in request.resource.data);
-
       // The pourer can change anything (including Reveal).
-      // The other person can only add their notes and tasting details,
-      // and can't mark it revealed or add a bottle name.
+      // The other person can only mark the sample finished or not.
       allow update: if allowed() && (
         (resource.data.giverId == me() && request.resource.data.giverId == me())
-        || (
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['format', 'tastedOn', 'pairedWith', 'status', 'note_' + me()])
-          && (!('status' in request.resource.data.diff(resource.data).affectedKeys())
-              || request.resource.data.status in ['with', 'tasted'])
-        )
+        || changed().hasOnly(['emptied', 'emptiedOn'])
       );
-
       allow delete: if allowed() && resource.data.giverId == me();
+    }
+
+    match /tastings/{id} {
+      allow read: if allowed();
+      allow create: if allowed() && request.resource.data.createdBy == me();
+      // Each person writes only their own pick and notes.
+      // Bottle reveals for "a bottle from my shelf" pours go in bottle0 / bottle1.
+      allow update: if allowed()
+        && changed().hasOnly(['date', 'pours', 'pick_' + me(), 'note_' + me(), 'bottle0', 'bottle1']);
+      allow delete: if allowed() && resource.data.createdBy == me();
     }
   }
 }

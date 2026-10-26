@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Blind Pours</title>
+<title>Pours</title>
 <meta name="theme-color" content="#3b2c22">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -93,31 +93,58 @@ body{margin:0;padding-top:max(20px,env(safe-area-inset-top,0px))}
 .gate p{margin:0}
 </style>
 <script src="config.js"></script>
+<style>
+.brand{font-family:var(--display);font-size:2.2rem;font-weight:700;letter-spacing:.02em;text-align:center;margin:0}
+.foot{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;font-size:.85rem;color:var(--muted);margin-top:8px}
+.codeval{display:flex;align-items:center;gap:8px;min-height:44px}
+.codeval .code{font-size:1rem;color:var(--ink)}
+.iconbtn{background:none;border:1px solid var(--line);border-radius:8px;width:36px;height:36px;display:grid;place-items:center;color:var(--muted);cursor:pointer}
+.iconbtn svg{width:16px;height:16px}
+.auto{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:middle}
+.lblrow{display:flex;align-items:center}
+.more{background:none;border:0;color:var(--muted);font:600 .9rem var(--body);padding:6px 0;cursor:pointer;text-align:left}
+.pill.finished{color:var(--muted)}
+.vs{color:var(--muted);font-weight:600;font-size:.85rem;margin:0 2px}
+.picks{display:flex;flex-direction:column;gap:2px;font-size:.88rem;color:var(--muted)}
+.picks b{color:var(--ink);font-weight:600}
+.pour{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.pour-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pour-h .num{font:700 .78rem var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.pour-h .nm{font-weight:700}
+.pour-h .btn{margin-left:auto;padding:6px 10px;font-size:.85rem}
+.check{display:flex;gap:8px;align-items:center;font-size:.92rem}
+.check input{width:auto}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg label{flex:1 1 110px;border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center;cursor:pointer;background:var(--surface);font-weight:600;font-size:.92rem;min-width:0;overflow-wrap:anywhere}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg input:checked+span{color:var(--amber)}
+.seg label:has(input:checked){border-color:var(--amber)}
+.seg label:has(input:focus-visible){outline:2px solid var(--amber);outline-offset:2px}
+.notes2{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:560px){.notes2{grid-template-columns:1fr 1fr}}
+.notes2 .box{min-width:0}
+</style>
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <div>
-      <h1>Blind Pours</h1>
-      <p id="sub">Shared sample shelf. Each of you only sees the bottles you poured until you reveal them.</p>
-    </div>
-    <div class="who" id="who" hidden><span id="whoName"></span><button class="link" id="signOut">Sign out</button></div>
-  </header>
+  <h1 class="brand">Pours</h1>
 
   <div id="gate" class="gate" hidden>
-    <p id="gateMsg">Sign in with the Google account you and your tasting partner agreed on.</p>
+    <p id="gateMsg">Sign in with your Google account.</p>
     <button class="btn primary" id="signIn">Sign in with Google</button>
     <div class="status" id="gateStatus"></div>
   </div>
 
   <div id="app" hidden>
     <div class="tabs" role="tablist" id="tabs">
-      <button class="tab" role="tab" id="tab-theirs" data-tab="theirs" aria-selected="true"><span class="lbltext">They have</span><span class="n" id="n-theirs">0</span></button>
-      <button class="tab" role="tab" id="tab-mine" data-tab="mine" aria-selected="false"><span class="lbltext">I have</span><span class="n" id="n-mine">0</span></button>
-      <button class="tab" role="tab" id="tab-log" data-tab="log" aria-selected="false"><span class="lbltext">Revealed</span><span class="n" id="n-log">0</span></button>
+      <button class="tab" role="tab" id="tab-theirs" data-tab="theirs" aria-selected="true"><span class="lbltext">I've given</span><span class="n" id="n-theirs">0</span></button>
+      <button class="tab" role="tab" id="tab-mine" data-tab="mine" aria-selected="false"><span class="lbltext">Given to me</span><span class="n" id="n-mine">0</span></button>
+      <button class="tab" role="tab" id="tab-log" data-tab="log" aria-selected="false"><span class="lbltext">Tastings</span><span class="n" id="n-log">0</span></button>
     </div>
-    <div class="list" id="list" style="margin-top:18px"><div class="empty">Loading the shelf…</div></div>
+    <div class="list" id="list" style="margin-top:18px"><div class="empty">Loading…</div></div>
   </div>
+
+  <div class="foot" id="who" hidden><span id="whoName"></span><button class="link" id="signOut">Sign out</button></div>
 </div>
 <button class="btn primary fab" id="addBtn" hidden>+ Log a sample I'm giving</button>
 <div id="sheetRoot"></div>
@@ -128,8 +155,9 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAut
 import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const COLORS=[["Blue","#2f6db5"],["Green","#2f8a4c"],["Red","#c0392b"],["Yellow","#d4a017"],["Orange","#e07020"],["Purple","#7b4bb3"],["Pink","#d6568f"],["Black","#2b2b2b"],["Silver","#8d9399"]];
-const FORMATS=["Solo pour","Head-to-head (two samples)","Versus one of our bottles"];
-const S={me:null,myName:"",samples:[],keys:{},members:{},tab:"theirs",openId:null,unsubs:[]};
+const PENCIL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+const SCAN_TIP=`<div class="note">From your notebook: on iPhone, tap this box, tap again and choose <b>Scan Text</b>, or use Live Text on the photo. On Android, open the photo in Google Photos, tap <b>Lens</b>, then copy and paste here.</div>`;
+const S={me:null,myName:"",samples:[],tastings:[],keys:{},members:{},tab:"theirs",showDone:{theirs:false,mine:false},openId:null,unsubs:[]};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
@@ -137,53 +165,88 @@ const fmtDate=s=>{if(!s)return"";const [y,m,d]=s.split("-").map(Number);return n
 const first=n=>(n||"").trim().split(/\s+/)[0];
 function getTab(){try{return localStorage.getItem("bp-tab")}catch(e){return null}}
 function setTabStore(t){try{localStorage.setItem("bp-tab",t)}catch(e){}}
-const errText=e=>e&&e.code==="permission-denied"?"This Google account isn't allowed to change that.":(e&&(e.message||e.code))||"unknown error";
+const errText=e=>e&&e.code==="permission-denied"?"The database refused that change. If the rules were just updated, make sure they were published.":(e&&(e.message||e.code))||"unknown error";
 
-if(!window.FIREBASE_CONFIG){
-  $("gate").hidden=false;$("signIn").hidden=true;
-  $("gateMsg").textContent="Almost ready. The Firebase project hasn't been connected yet, so sign-in is turned off.";
-  throw new Error("No Firebase config");
-}
-const fb=initializeApp(window.FIREBASE_CONFIG);
-const auth=getAuth(fb);
-const db=getFirestore(fb);
+if(!window.FIREBASE_CONFIG){$("gate").hidden=false;$("signIn").hidden=true;$("gateMsg").textContent="The Firebase project isn't connected yet.";throw new Error("No Firebase config")}
+const fb=initializeApp(window.FIREBASE_CONFIG), auth=getAuth(fb), db=getFirestore(fb);
 
+// ---- people & names ----
 function otherId(){return Object.keys(S.members).find(id=>id!==S.me)||S.samples.map(s=>s.giverId).find(id=>id&&id!==S.me)||null}
 function otherName(){const id=otherId();return (id&&first(S.members[id]?.name))||"your friend"}
+function OtherName(){const n=otherName();return n[0].toUpperCase()+n.slice(1)}
 function nameOf(id){return id===S.me?"You":(first(S.members[id]?.name)||"Your friend")}
+function nameOf3(id){return id===S.me?(first(S.myName)||"You"):(first(S.members[id]?.name)||"Your friend")}
+
+// ---- samples ----
+const sampleById=id=>S.samples.find(s=>s.id===id);
 function bottleFor(s){return s.bottle||(s.giverId===S.me?(S.keys[s.id]?.bottle||""):"")}
 function dot(s){const c=(COLORS.find(c=>c[0]===s.stickerColor)||["","#777"])[1];
   return `<span class="dot" style="background:${esc(s.stickerHex||c)}" aria-hidden="true">${esc((s.stickerText||"").slice(0,3))}</span>`}
 function stickerName(s){return [s.stickerColor,s.stickerText].filter(Boolean).join(" ")||"Unlabeled"}
-function pill(s){const t={with:"Unopened",tasted:"Tasted",revealed:"Revealed"}[s.status]||"Unopened";return `<span class="pill ${esc(s.status||"with")}">${t}</span>`}
+const tastingsWith=id=>S.tastings.filter(t=>(t.pours||[]).some(p=>p.kind==="sample"&&p.sampleId===id));
+function pill(s){
+  if(s.emptied)return `<span class="pill finished">Finished</span>`;
+  if(s.status==="revealed")return `<span class="pill revealed">Revealed</span>`;
+  if(tastingsWith(s.id).length)return `<span class="pill tasted">Tasted</span>`;
+  return `<span class="pill with">Unopened</span>`;
+}
 
+// ---- tastings ----
+function pourName(t,i){
+  const p=(t.pours||[])[i];if(!p)return"";
+  if(p.kind==="sample"){const s=sampleById(p.sampleId);if(!s)return"Deleted sample";return bottleFor(s)||stickerName(s)}
+  if(t["bottle"+i])return t["bottle"+i];
+  if(p.ownerId===S.me)return S.keys[`t_${t.id}_${i}`]?.bottle||"My bottle";
+  return `${nameOf3(p.ownerId)}'s bottle`;
+}
+function pourHidden(t,i){
+  const p=(t.pours||[])[i];if(!p)return false;
+  if(p.kind==="sample"){const s=sampleById(p.sampleId);return !!s&&!bottleFor(s)}
+  return !t["bottle"+i]&&p.ownerId!==S.me;
+}
+function pourLabel(t,i){const n=pourName(t,i);return pourHidden(t,i)?n+" (hidden)":n}
+function tastingTitle(t){const n=(t.pours||[]).length;return n===1?pourName(t,0):`${pourName(t,0)} vs ${pourName(t,1)}`}
+function tastingFormat(t){const ps=t.pours||[];if(ps.length<2)return"Solo pour";return ps.some(p=>p.kind==="bottle")?"Versus a bottle":"Head-to-head"}
+function pickText(t,uid){const v=t["pick_"+uid];if(v===undefined||v===null||v==="")return null;if(v==="even")return"Even";return pourName(t,Number(v))}
+
+// ---- render ----
+function sampleCard(s){
+  const b=bottleFor(s);let sub="";
+  if(s.giverId===S.me)sub=`<div class="secret">${b?esc(b):"<i>No bottle saved</i>"}</div><div class="sub">Given ${esc(fmtDate(s.givenOn))}</div>`;
+  else sub=`${b?`<div class="secret">${esc(b)}</div>`:""}<div class="sub">From ${esc(nameOf(s.giverId))} · ${esc(fmtDate(s.givenOn))}</div>`;
+  return `<button class="card" data-sample="${esc(s.id)}">${dot(s)}<div class="main"><div class="t">${esc(stickerName(s))}<span class="code">${esc(s.code||"")}</span></div>${sub}</div>${pill(s)}</button>`;
+}
+function tastingCard(t){
+  const ids=[S.me,otherId()].filter(Boolean);
+  const pk=(t.pours||[]).length>1?ids.map(u=>{const p=pickText(t,u);return `<span>${esc(nameOf3(u))}: ${p?`<b>${esc(p)}</b>`:"no pick yet"}</span>`}).join(""):"";
+  return `<button class="card" data-tasting="${esc(t.id)}" style="grid-template-columns:1fr auto"><div class="main"><div class="t">${esc(tastingTitle(t))}</div><div class="sub">${esc(fmtDate(t.date))} · ${esc(tastingFormat(t))}</div>${pk?`<div class="picks">${pk}</div>`:""}</div></button>`;
+}
 function render(){
-  const theirs=S.samples.filter(s=>s.giverId===S.me&&s.status!=="revealed");
-  const mine=S.samples.filter(s=>s.giverId!==S.me&&s.status!=="revealed");
-  const log=S.samples.filter(s=>s.status==="revealed").sort((a,b)=>(b.revealedAt||0)-(a.revealedAt||0));
-  const on=otherName();
-  document.querySelector("#tab-theirs .lbltext").textContent=otherId()?`${on[0].toUpperCase()+on.slice(1)} has`:"They have";
-  $("n-theirs").textContent=theirs.length;$("n-mine").textContent=mine.length;$("n-log").textContent=log.length;
+  const theirsAll=S.samples.filter(s=>s.giverId===S.me), mineAll=S.samples.filter(s=>s.giverId!==S.me);
+  const live=a=>a.filter(s=>!s.emptied), done=a=>a.filter(s=>s.emptied);
+  const has=!!otherId();
+  document.querySelector("#tab-theirs .lbltext").textContent=has?`I've given ${OtherName()}`:"I've given";
+  document.querySelector("#tab-mine .lbltext").textContent=has?`${OtherName()}'s given me`:"Given to me";
+  $("n-theirs").textContent=live(theirsAll).length;$("n-mine").textContent=live(mineAll).length;$("n-log").textContent=S.tastings.length;
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===S.tab)));
-  const rows={theirs,mine,log}[S.tab];
+  $("addBtn").textContent=S.tab==="log"?"+ Log a tasting":"+ Log a sample I'm giving";
   const L=$("list");
-  if(!rows.length){
-    L.innerHTML=`<div class="empty">${{
-      theirs:"No samples out with your friend. Tap <b>Log a sample I'm giving</b> when you fill and label one.",
-      mine:"Nothing waiting on your shelf. Samples your friend logs for you show up here, with the sticker only.",
-      log:"Nothing revealed yet. After a tasting, whoever poured the sample taps Reveal."}[S.tab]}</div>`;return}
-  L.innerHTML=rows.map(s=>{
-    const b=bottleFor(s);let sub="";
-    if(S.tab==="theirs")sub=`<div class="secret">${b?esc(b):"<i>No bottle saved</i>"}</div><div class="sub">Given ${esc(fmtDate(s.givenOn))}</div>`;
-    else if(S.tab==="mine")sub=`<div class="sub">From ${esc(nameOf(s.giverId))} · ${esc(fmtDate(s.givenOn))}</div>`;
-    else sub=`<div class="secret">${esc(b)}</div><div class="sub">Poured by ${esc(nameOf(s.giverId))}${s.tastedOn?" · tasted "+esc(fmtDate(s.tastedOn)):""}</div>`;
-    return `<button class="card" data-id="${esc(s.id)}">${dot(s)}<div class="main"><div class="t">${esc(stickerName(s))}<span class="code">${esc(s.code||"")}</span></div>${sub}</div>${pill(s)}</button>`}).join("");
+  if(S.tab==="log"){
+    const rows=[...S.tastings].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.createdAt||0)-(a.createdAt||0));
+    L.innerHTML=rows.length?rows.map(tastingCard).join(""):`<div class="empty">No tastings logged yet. After a FaceTime, tap <b>Log a tasting</b> to record what you poured, your pick and your notes.</div>`;return;
+  }
+  const all=S.tab==="theirs"?theirsAll:mineAll, l=live(all), d=done(all);
+  let html=l.length?l.map(sampleCard).join(""):`<div class="empty">${S.tab==="theirs"?`Nothing out with ${esc(otherName())}. Tap <b>Log a sample I'm giving</b> when you fill and label one.`:`Nothing waiting from ${esc(otherName())}. Samples logged for you show up here with the sticker only.`}</div>`;
+  if(d.length){html+=`<button class="more" id="toggleDone">${S.showDone[S.tab]?"Hide":"Show"} finished samples (${d.length})</button>`;if(S.showDone[S.tab])html+=d.map(sampleCard).join("")}
+  L.innerHTML=html;
+  const tg=$("toggleDone");if(tg)tg.onclick=()=>{S.showDone[S.tab]=!S.showDone[S.tab];render()};
 }
 
 $("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(!b)return;S.tab=b.dataset.tab;setTabStore(S.tab);render()});
-$("list").addEventListener("click",e=>{const c=e.target.closest(".card");if(c)openDetail(c.dataset.id)});
-$("addBtn").addEventListener("click",openAdd);
+$("list").addEventListener("click",e=>{const c=e.target.closest(".card");if(!c)return;if(c.dataset.sample)openSample(c.dataset.sample);else if(c.dataset.tasting)openTasting(c.dataset.tasting)});
+$("addBtn").addEventListener("click",()=>S.tab==="log"?openAddTasting():openAddSample());
 
+// ---- sheets ----
 function closeSheet(){$("sheetRoot").innerHTML="";S.openId=null}
 function sheet(html){
   $("sheetRoot").innerHTML=`<div class="sheet-bg" id="sheetBg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
@@ -191,99 +254,187 @@ function sheet(html){
   document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeSheet));
 }
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
+function confirmBox(target,html,yesLabel,yesClass,onYes){
+  $(target).innerHTML=`<div class="confirm"><div>${html}</div><div class="actions"><button class="btn ${yesClass}" id="c-yes">${yesLabel}</button><button class="btn" id="c-no">Cancel</button></div></div>`;
+  $("c-no").onclick=()=>$(target).innerHTML="";$("c-yes").onclick=onYes;
+}
+const keyRef=id=>doc(db,"members",S.me,"keys",id);
 
 function nextCode(){
   const ini=(S.myName||"?").trim().charAt(0).toUpperCase()||"?";
   const nums=S.samples.filter(s=>s.giverId===S.me).map(s=>parseInt(String(s.code||"").split("-")[1],10)).filter(n=>!isNaN(n));
   return ini+"-"+String((nums.length?Math.max(...nums):0)+1).padStart(2,"0");
 }
-const keyRef=id=>doc(db,"members",S.me,"keys",id);
 
-function openAdd(){
-  let color="Blue";
+function openAddSample(){
+  let color="Blue";const auto=nextCode();
   sheet(`<div class="sheet-head"><h2>Log a sample</h2><button class="btn x" data-close>Close</button></div>
-  <p class="note">${esc(otherName()[0].toUpperCase()+otherName().slice(1))} sees the sticker and code. The bottle stays private to you until you reveal it.</p>
   <div class="field"><span class="lbl">Sticker color</span><div class="swatches" id="sw">${COLORS.map(([n,h])=>`<button class="sw" type="button" title="${n}" aria-label="${n}" aria-pressed="${n===color}" data-c="${n}" style="background:${h}"></button>`).join("")}</div></div>
   <div class="row">
     <div class="field"><label for="f-text">Sticker mark</label><input id="f-text" placeholder="A, flower, star…" maxlength="20"></div>
-    <div class="field"><label for="f-code">Sample code</label><input id="f-code" value="${esc(nextCode())}" maxlength="10"></div>
+    <div class="field"><div class="lblrow"><label for="f-code">Sample code</label><span class="auto">Automatic</span></div>
+      <div class="codeval" id="codeView"><span class="code" id="codeText">${esc(auto)}</span><button class="iconbtn" type="button" id="codeEdit" aria-label="Edit sample code">${PENCIL}</button></div>
+      <input id="f-code" value="${esc(auto)}" maxlength="10" hidden></div>
   </div>
   <div class="field"><label for="f-bottle">Bottle (only you see this)</label><input id="f-bottle" placeholder="1792 Single Barrel"></div>
   <div class="field"><label for="f-details">Private details</label><input id="f-details" placeholder="Proof, barrel #, store pick, price"></div>
   <div class="field"><label for="f-date">Date given</label><input id="f-date" type="date" value="${today()}"></div>
   <div class="status" id="f-status"></div>
   <button class="btn primary" id="f-save">Save sample</button>`);
+  $("codeEdit").onclick=()=>{$("codeView").hidden=true;$("f-code").hidden=false;$("f-code").focus();$("f-code").select()};
   $("sw").addEventListener("click",e=>{const b=e.target.closest(".sw");if(!b)return;color=b.dataset.c;
     document.querySelectorAll(".sw").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))});
   $("f-save").addEventListener("click",async()=>{
-    const bottle=$("f-bottle").value.trim(),text=$("f-text").value.trim();
+    const bottle=$("f-bottle").value.trim(),text=$("f-text").value.trim(),code=$("f-code").value.trim()||auto;
     if(!text){$("f-status").textContent="Add the sticker mark so you can both find it.";return}
     if(!bottle){$("f-status").textContent="Add the bottle name so you can reveal it later.";return}
     $("f-save").disabled=true;$("f-status").textContent="Saving…";
     try{
-      const hex=COLORS.find(c=>c[0]===color)[1];
-      const ref=await addDoc(collection(db,"samples"),{code:$("f-code").value.trim(),stickerColor:color,stickerHex:hex,stickerText:text,
-        giverId:S.me,givenOn:$("f-date").value||today(),status:"with",createdAt:Date.now()});
+      const ref=await addDoc(collection(db,"samples"),{code,stickerColor:color,stickerHex:COLORS.find(c=>c[0]===color)[1],stickerText:text,
+        giverId:S.me,givenOn:$("f-date").value||today(),status:"with",emptied:false,createdAt:Date.now()});
       await setDoc(keyRef(ref.id),{bottle,details:$("f-details").value.trim()});
       closeSheet();S.tab="theirs";render();
     }catch(e){$("f-save").disabled=false;$("f-status").textContent="Couldn't save: "+errText(e)}
   });
 }
 
-function openDetail(id){
-  const s=S.samples.find(x=>x.id===id);if(!s)return;S.openId=id;
-  const mineGiven=s.giverId===S.me, key=S.keys[id]||{}, other=mineGiven?otherId():s.giverId;
-  const myNote=s["note_"+S.me]||"", theirNote=other?(s["note_"+other]||""):"";
-  const b=bottleFor(s);
+function openSample(id){
+  const s=sampleById(id);if(!s)return;S.openId=id;
+  const mineGiven=s.giverId===S.me, key=S.keys[id]||{}, b=bottleFor(s), ts=tastingsWith(id);
   let bottleBox="";
   if(s.status==="revealed")bottleBox=`<div class="box"><span class="lbl">Revealed</span><div class="reveal-name">${esc(b)}</div>${mineGiven&&key.details?`<div class="note">${esc(key.details)}</div>`:""}</div>`;
   else if(mineGiven)bottleBox=`<div class="box"><span class="lbl">Bottle · only you can see this</span>
     <input id="d-bottle" value="${esc(key.bottle||"")}" placeholder="Bottle name" aria-label="Bottle name"><input id="d-details" value="${esc(key.details||"")}" placeholder="Proof, barrel #, price" aria-label="Private details">
     <div class="actions"><button class="btn" id="d-savekey">Save bottle</button></div></div>`;
   else bottleBox=`<div class="box"><span class="lbl">Bottle</span><div class="note">Hidden until ${esc(nameOf(s.giverId))} reveals it.</div></div>`;
-
+  const holder=mineGiven?otherName():"you";
   sheet(`<div class="sheet-head">${dot(s)}<div><h2>${esc(stickerName(s))}</h2><div class="code">${esc(s.code||"")} · from ${esc(nameOf(s.giverId))} · ${esc(fmtDate(s.givenOn))}</div></div><button class="btn x" data-close>Close</button></div>
   ${bottleBox}
-  <div class="row">
-    <div class="field"><label for="d-format">Tasting format</label><select id="d-format"><option value="">Not tasted yet</option>${FORMATS.map(f=>`<option ${s.format===f?"selected":""}>${f}</option>`).join("")}</select></div>
-    <div class="field"><label for="d-tasted">Tasted on</label><input id="d-tasted" type="date" value="${esc(s.tastedOn||"")}"></div>
-  </div>
-  <div class="field"><label for="d-paired">Paired with</label><input id="d-paired" value="${esc(s.pairedWith||"")}" placeholder="Other sample code or bottle"></div>
-  <div class="field"><label for="d-note">My notes</label><textarea id="d-note" placeholder="Nose, palate, finish, guess…">${esc(myNote)}</textarea>
-    <div class="note">From your notebook: on iPhone, tap this box, tap again and choose <b>Scan Text</b>, or use Live Text on the photo. On Android, open the photo in Google Photos, tap <b>Lens</b>, then copy the text and paste it here.</div></div>
-  ${other?`<div class="box"><span class="lbl">${esc(nameOf(other))}'s notes</span><div class="read">${theirNote?esc(theirNote):'<span class="note">No notes yet.</span>'}</div></div>`:""}
+  <div class="box"><span class="lbl">Sample</span>
+    <div>${s.emptied?`Finished${s.emptiedOn?" on "+esc(fmtDate(s.emptiedOn)):""}.`:`Still has some left (with ${esc(holder)}).`}</div>
+    <div class="actions"><button class="btn" id="d-empty">${s.emptied?"Mark as not finished":"Mark as finished"}</button></div></div>
+  <div class="box"><span class="lbl">Tastings</span>${ts.length?ts.map(t=>`<button class="more" data-t="${esc(t.id)}">${esc(fmtDate(t.date))} · ${esc(tastingTitle(t))}</button>`).join(""):'<div class="note">Not in any tastings yet.</div>'}</div>
   <div class="status" id="d-status"></div>
-  <div class="actions"><button class="btn primary" id="d-save">Save tasting</button>
-    ${mineGiven&&s.status!=="revealed"?`<button class="btn" id="d-reveal">Reveal to ${esc(otherName())}</button>`:""}
+  <div class="actions">
+    ${mineGiven&&s.status!=="revealed"?`<button class="btn primary" id="d-reveal">Reveal to ${esc(otherName())}</button>`:""}
     ${mineGiven&&s.status==="revealed"?`<button class="btn" id="d-unreveal">Hide again</button>`:""}
     ${mineGiven?`<button class="btn danger" id="d-del">Delete</button>`:""}</div>
   <div id="d-confirm"></div>`);
-
-  const st=$("d-status"), sref=doc(db,"samples",id);
-  const fail=e=>{st.textContent="Couldn't save: "+errText(e)};
-  $("d-save").addEventListener("click",async()=>{
-    const fmt=$("d-format").value, tasted=$("d-tasted").value||(fmt?today():"");
-    const upd={format:fmt,tastedOn:tasted,pairedWith:$("d-paired").value.trim(),["note_"+S.me]:$("d-note").value};
-    if(s.status!=="revealed"&&fmt&&s.status!=="tasted")upd.status="tasted";
-    st.textContent="Saving…";try{await updateDoc(sref,upd);st.textContent="Saved."}catch(e){fail(e)}});
-  if($("d-savekey"))$("d-savekey").addEventListener("click",async()=>{st.textContent="Saving…";
-    try{await setDoc(keyRef(id),{bottle:$("d-bottle").value.trim(),details:$("d-details").value.trim()});st.textContent="Bottle saved."}catch(e){fail(e)}});
-  if($("d-reveal"))$("d-reveal").addEventListener("click",()=>{
-    const name=(S.keys[id]||{}).bottle;
-    if(!name){st.textContent="Save the bottle name first, then reveal.";return}
-    $("d-confirm").innerHTML=`<div class="confirm"><div>Show <b>${esc(name)}</b> to ${esc(otherName())}?</div><div class="actions"><button class="btn primary" id="c-yes">Reveal</button><button class="btn" id="c-no">Not yet</button></div></div>`;
-    $("c-no").onclick=()=>$("d-confirm").innerHTML="";
-    $("c-yes").onclick=async()=>{try{await updateDoc(sref,{status:"revealed",bottle:name,revealedAt:Date.now(),tastedOn:s.tastedOn||$("d-tasted").value||today()});closeSheet();S.tab="log";render()}catch(e){fail(e)}};
-  });
-  if($("d-unreveal"))$("d-unreveal").addEventListener("click",async()=>{try{await updateDoc(sref,{status:s.format?"tasted":"with",bottle:""});closeSheet()}catch(e){fail(e)}});
-  if($("d-del"))$("d-del").addEventListener("click",()=>{
-    $("d-confirm").innerHTML=`<div class="confirm"><div>Delete ${esc(stickerName(s))} (${esc(s.code||"")}) and both sets of notes?</div><div class="actions"><button class="btn danger" id="c-yes">Delete</button><button class="btn" id="c-no">Keep it</button></div></div>`;
-    $("c-no").onclick=()=>$("d-confirm").innerHTML="";
-    $("c-yes").onclick=async()=>{try{await deleteDoc(sref);try{await deleteDoc(keyRef(id))}catch(e){}closeSheet()}catch(e){fail(e)}};
-  });
+  const st=$("d-status"), sref=doc(db,"samples",id), fail=e=>{st.textContent="Couldn't save: "+errText(e)};
+  document.querySelectorAll("[data-t]").forEach(x=>x.onclick=()=>openTasting(x.dataset.t));
+  $("d-empty").onclick=async()=>{try{await updateDoc(sref,s.emptied?{emptied:false,emptiedOn:""}:{emptied:true,emptiedOn:today()});closeSheet()}catch(e){fail(e)}};
+  if($("d-savekey"))$("d-savekey").onclick=async()=>{st.textContent="Saving…";
+    try{await setDoc(keyRef(id),{bottle:$("d-bottle").value.trim(),details:$("d-details").value.trim()});st.textContent="Bottle saved."}catch(e){fail(e)}};
+  if($("d-reveal"))$("d-reveal").onclick=()=>{
+    const name=(S.keys[id]||{}).bottle;if(!name){st.textContent="Save the bottle name first, then reveal.";return}
+    confirmBox("d-confirm",`Show <b>${esc(name)}</b> to ${esc(otherName())}?`,"Reveal","primary",async()=>{try{await updateDoc(sref,{status:"revealed",bottle:name,revealedAt:Date.now()});closeSheet()}catch(e){fail(e)}});
+  };
+  if($("d-unreveal"))$("d-unreveal").onclick=async()=>{try{await updateDoc(sref,{status:"with",bottle:""});closeSheet()}catch(e){fail(e)}};
+  if($("d-del"))$("d-del").onclick=()=>confirmBox("d-confirm",`Delete ${esc(stickerName(s))} (${esc(s.code||"")})? Tastings that used it will show it as deleted.`,"Delete","danger",async()=>{
+    try{await deleteDoc(sref);try{await deleteDoc(keyRef(id))}catch(e){}closeSheet()}catch(e){fail(e)}});
 }
 
-// ---- Auth ----
+// ---- tastings: add ----
+function pourPicker(i){
+  const avail=S.samples.filter(s=>!s.emptied);
+  const opt=s=>{const b=s.giverId===S.me?bottleFor(s):"";return `<option value="s:${esc(s.id)}">${esc(s.code||"")} · ${esc(stickerName(s))}${b?" · "+esc(b):""} (from ${esc(nameOf3(s.giverId))})</option>`};
+  return `<div class="pour" id="pour${i}"><div class="field"><label for="p${i}-src">Pour ${i+1}</label>
+    <select id="p${i}-src"><option value="">Choose…</option>${avail.map(opt).join("")}<option value="bottle">A bottle from my shelf…</option></select></div>
+    <div class="field" id="p${i}-bwrap" hidden><label for="p${i}-bottle">Bottle (only you see this until you reveal it)</label><input id="p${i}-bottle" placeholder="Weller 12"></div>
+    <label class="check" id="p${i}-ewrap" hidden><input type="checkbox" id="p${i}-empty"> This finished the sample</label></div>`;
+}
+function openAddTasting(){
+  let n=2;
+  const draw=()=>{
+    $("pours").innerHTML=pourPicker(0)+(n===2?pourPicker(1):"");
+    for(let i=0;i<n;i++){const sel=$(`p${i}-src`);sel.onchange=()=>{$(`p${i}-bwrap`).hidden=sel.value!=="bottle";$(`p${i}-ewrap`).hidden=!sel.value.startsWith("s:")}}
+    $("pickWrap").hidden=n!==2;
+  };
+  sheet(`<div class="sheet-head"><h2>Log a tasting</h2><button class="btn x" data-close>Close</button></div>
+  <div class="row">
+    <div class="field"><label for="t-date">Date</label><input id="t-date" type="date" value="${today()}"></div>
+    <div class="field"><span class="lbl">Pours</span><div class="seg" id="t-n">
+      <label><input type="radio" name="tn" value="1"><span>One on its own</span></label>
+      <label><input type="radio" name="tn" value="2" checked><span>Two, side by side</span></label></div></div>
+  </div>
+  <div id="pours" style="display:flex;flex-direction:column;gap:10px"></div>
+  <div class="field" id="pickWrap"><span class="lbl">My pick</span><div class="seg" id="t-pick">
+    <label><input type="radio" name="tp" value="0"><span>Pour 1</span></label>
+    <label><input type="radio" name="tp" value="1"><span>Pour 2</span></label>
+    <label><input type="radio" name="tp" value="even"><span>Even</span></label></div></div>
+  <div class="field"><label for="t-note">My notes</label><textarea id="t-note" placeholder="Nose, palate, finish, guesses…"></textarea>${SCAN_TIP}</div>
+  <p class="note">${esc(OtherName())} adds their own pick and notes after you save.</p>
+  <div class="status" id="t-status"></div>
+  <button class="btn primary" id="t-save">Save tasting</button>`);
+  draw();
+  $("t-n").onchange=e=>{n=Number(e.target.value);draw()};
+  $("t-save").onclick=async()=>{
+    const st=$("t-status"), pours=[], privates=[], empties=[];
+    for(let i=0;i<n;i++){
+      const v=$(`p${i}-src`).value;
+      if(!v){st.textContent=`Choose what Pour ${i+1} was.`;return}
+      if(v==="bottle"){const nm=$(`p${i}-bottle`).value.trim();if(!nm){st.textContent=`Add the bottle name for Pour ${i+1}.`;return}pours.push({kind:"bottle",ownerId:S.me});privates.push([i,nm])}
+      else{const sid=v.slice(2);if(pours.some(p=>p.sampleId===sid)){st.textContent="Pick two different pours.";return}pours.push({kind:"sample",sampleId:sid});if($(`p${i}-empty`).checked)empties.push(sid)}
+    }
+    const pick=(document.querySelector('input[name="tp"]:checked')||{}).value;
+    const data={date:$("t-date").value||today(),pours,createdBy:S.me,createdAt:Date.now(),["note_"+S.me]:$("t-note").value};
+    if(n===2&&pick!==undefined)data["pick_"+S.me]=pick;
+    $("t-save").disabled=true;st.textContent="Saving…";
+    try{
+      const ref=await addDoc(collection(db,"tastings"),data);
+      for(const [i,nm] of privates)await setDoc(keyRef(`t_${ref.id}_${i}`),{bottle:nm});
+      for(const sid of empties)await updateDoc(doc(db,"samples",sid),{emptied:true,emptiedOn:data.date});
+      closeSheet();S.tab="log";render();
+    }catch(e){$("t-save").disabled=false;st.textContent="Couldn't save: "+errText(e)}
+  };
+}
+
+// ---- tastings: detail ----
+function openTasting(id){
+  const t=S.tastings.find(x=>x.id===id);if(!t)return;S.openId=id;
+  const two=(t.pours||[]).length===2, other=otherId();
+  const pourRow=(p,i)=>{
+    let action="",extra="";
+    if(p.kind==="sample"){const s=sampleById(p.sampleId);
+      if(s){extra=`<div class="note">${esc(s.code||"")} · ${esc(stickerName(s))} · from ${esc(nameOf3(s.giverId))}${s.emptied?" · finished":""}</div>`;
+        if(s.giverId===S.me&&s.status!=="revealed")action=`<button class="btn" data-reveal-s="${esc(s.id)}">Reveal</button>`;
+        if(!s.emptied&&s.giverId!==S.me)action+=`<button class="btn" data-empty-s="${esc(s.id)}" style="margin-left:${action?"0":"auto"}">Finished it</button>`;}}
+    else{extra=`<div class="note">From ${esc(nameOf3(p.ownerId))}'s shelf</div>`;
+      if(p.ownerId===S.me&&!t["bottle"+i])action=`<button class="btn" data-reveal-b="${i}">Reveal</button>`;}
+    return `<div class="pour"><div class="pour-h"><span class="num">Pour ${i+1}</span><span class="nm">${esc(pourLabel(t,i))}</span>${action}</div>${extra}</div>`;
+  };
+  const seg=(uid)=>`<div class="seg" id="d-pick">${(t.pours||[]).map((p,i)=>`<label><input type="radio" name="dp" value="${i}" ${String(t["pick_"+uid])===String(i)?"checked":""}><span>${esc(pourName(t,i))}</span></label>`).join("")}<label><input type="radio" name="dp" value="even" ${t["pick_"+uid]==="even"?"checked":""}><span>Even</span></label></div>`;
+  const theirPick=other?pickText(t,other):null;
+  sheet(`<div class="sheet-head"><div><h2>${esc(tastingTitle(t))}</h2><div class="code">${esc(fmtDate(t.date))} · ${esc(tastingFormat(t))}</div></div><button class="btn x" data-close>Close</button></div>
+  ${(t.pours||[]).map(pourRow).join("")}
+  <div class="notes2">
+    <div class="box"><span class="lbl">${esc(nameOf3(S.me))}</span>
+      ${two?`<div class="field"><span class="lbl">My pick</span>${seg(S.me)}</div>`:""}
+      <div class="field"><label for="d-note">My notes</label><textarea id="d-note" placeholder="Nose, palate, finish, guesses…">${esc(t["note_"+S.me]||"")}</textarea>${SCAN_TIP}</div>
+      <div class="actions"><button class="btn primary" id="d-save">Save my notes</button></div></div>
+    ${other?`<div class="box"><span class="lbl">${esc(nameOf3(other))}</span>
+      ${two?`<div><span class="lbl">Pick</span><div>${theirPick?`<b>${esc(theirPick)}</b>`:'<span class="note">No pick yet.</span>'}</div></div>`:""}
+      <div><span class="lbl">Notes</span><div class="read">${t["note_"+other]?esc(t["note_"+other]):'<span class="note">No notes yet.</span>'}</div></div></div>`:""}
+  </div>
+  <div class="status" id="d-status"></div>
+  ${t.createdBy===S.me?`<div class="actions"><button class="btn danger" id="d-del">Delete tasting</button></div>`:""}
+  <div id="d-confirm"></div>`);
+  const st=$("d-status"), tref=doc(db,"tastings",id), fail=e=>{st.textContent="Couldn't save: "+errText(e)};
+  $("d-save").onclick=async()=>{const upd={["note_"+S.me]:$("d-note").value};
+    const pk=document.querySelector('input[name="dp"]:checked');if(two&&pk)upd["pick_"+S.me]=pk.value;
+    st.textContent="Saving…";try{await updateDoc(tref,upd);st.textContent="Saved."}catch(e){fail(e)}};
+  document.querySelectorAll("[data-reveal-s]").forEach(b=>b.onclick=()=>{const sid=b.dataset.revealS, name=(S.keys[sid]||{}).bottle;
+    if(!name){st.textContent="That sample has no bottle name saved. Open it from your shelf to add one.";return}
+    confirmBox("d-confirm",`Show <b>${esc(name)}</b> to ${esc(otherName())}?`,"Reveal","primary",async()=>{try{await updateDoc(doc(db,"samples",sid),{status:"revealed",bottle:name,revealedAt:Date.now()});openTasting(id)}catch(e){fail(e)}})});
+  document.querySelectorAll("[data-reveal-b]").forEach(b=>b.onclick=()=>{const i=b.dataset.revealB, name=S.keys[`t_${id}_${i}`]?.bottle;
+    if(!name){st.textContent="No bottle name was saved for that pour.";return}
+    confirmBox("d-confirm",`Show <b>${esc(name)}</b> to ${esc(otherName())}?`,"Reveal","primary",async()=>{try{await updateDoc(tref,{["bottle"+i]:name});openTasting(id)}catch(e){fail(e)}})});
+  document.querySelectorAll("[data-empty-s]").forEach(b=>b.onclick=async()=>{try{await updateDoc(doc(db,"samples",b.dataset.emptyS),{emptied:true,emptiedOn:today()});st.textContent="Marked as finished."}catch(e){fail(e)}});
+  if($("d-del"))$("d-del").onclick=()=>confirmBox("d-confirm","Delete this tasting and both sets of notes? The samples stay on your shelves.","Delete","danger",async()=>{
+    try{await deleteDoc(tref);for(let i=0;i<(t.pours||[]).length;i++){try{await deleteDoc(keyRef(`t_${id}_${i}`))}catch(e){}}closeSheet()}catch(e){fail(e)}});
+}
+
+// ---- auth ----
 $("signIn").addEventListener("click",async()=>{
   $("gateStatus").textContent="";
   const p=new GoogleAuthProvider();p.setCustomParameters({prompt:"select_account"});
@@ -294,32 +445,26 @@ $("signIn").addEventListener("click",async()=>{
   }
 });
 $("signOut").addEventListener("click",()=>signOut(auth));
-
 function stopListening(){S.unsubs.forEach(u=>{try{u()}catch(e){}});S.unsubs=[]}
-function showGate(msg){
-  stopListening();closeSheet();
-  $("app").hidden=true;$("addBtn").hidden=true;$("who").hidden=!auth.currentUser;
-  $("gate").hidden=false;$("signIn").hidden=false;
-  if(msg)$("gateMsg").textContent=msg;
-}
+function showGate(msg){stopListening();closeSheet();$("app").hidden=true;$("addBtn").hidden=true;$("who").hidden=!auth.currentUser;$("gate").hidden=false;$("signIn").hidden=false;if(msg)$("gateMsg").textContent=msg}
+function reopen(){if(!S.openId)return;const ae=document.activeElement;if(ae&&(ae.tagName==="TEXTAREA"||ae.tagName==="INPUT"))return;
+  if(S.samples.find(x=>x.id===S.openId))openSample(S.openId);else if(S.tastings.find(x=>x.id===S.openId))openTasting(S.openId);else closeSheet()}
 
 onAuthStateChanged(auth,async u=>{
-  if(!u){S.me=null;showGate("Sign in with the Google account you and your tasting partner agreed on.");return}
+  if(!u){S.me=null;showGate("Sign in with your Google account.");return}
   S.me=u.uid;S.myName=u.displayName||u.email||"";
   $("whoName").textContent=u.email||u.displayName||"";$("who").hidden=false;
   try{await setDoc(doc(db,"members",u.uid),{name:u.displayName||"",email:(u.email||"").toLowerCase(),lastSeen:serverTimestamp()},{merge:true})}
-  catch(e){
-    if(e.code==="permission-denied"){showGate(`${u.email} isn't on this shelf's guest list. Sign out and use the Google account Tyler added.`);$("signIn").hidden=true;return}
-    showGate("Couldn't reach the shelf: "+errText(e));return;
-  }
+  catch(e){if(e.code==="permission-denied"){showGate(`${u.email} isn't on the guest list. Sign out and use the Google account Tyler added.`);$("signIn").hidden=true;return}
+    showGate("Couldn't reach the database: "+errText(e));return}
   $("gate").hidden=true;$("app").hidden=false;$("addBtn").hidden=false;
   const t=getTab();if(t&&["theirs","mine","log"].includes(t))S.tab=t;
   stopListening();
   S.unsubs.push(onSnapshot(collection(db,"members"),snap=>{const m={};snap.docs.forEach(d=>m[d.id]=d.data());S.members=m;render()},()=>{}));
-  S.unsubs.push(onSnapshot(collection(db,"samples"),snap=>{
-    S.samples=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    render();if(S.openId&&!S.samples.find(x=>x.id===S.openId))closeSheet();
-  },e=>{$("list").innerHTML=`<div class="empty">Couldn't load the shelf (${esc(e.code)}). Reload to try again.</div>`}));
+  S.unsubs.push(onSnapshot(collection(db,"samples"),snap=>{S.samples=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));render();reopen()},
+    e=>{$("list").innerHTML=`<div class="empty">Couldn't load samples (${esc(e.code)}). Reload to try again.</div>`}));
+  S.unsubs.push(onSnapshot(collection(db,"tastings"),snap=>{S.tastings=snap.docs.map(d=>({id:d.id,...d.data()}));render();reopen()},
+    e=>{if(S.tab==="log")$("list").innerHTML=`<div class="empty">Couldn't load tastings (${esc(e.code)}). The database rules may need updating.</div>`}));
   S.unsubs.push(onSnapshot(collection(db,"members",u.uid,"keys"),snap=>{const k={};snap.docs.forEach(d=>k[d.id]=d.data());S.keys=k;render()},()=>{}));
 });
 </script>
