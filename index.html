@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Pours</title>
 <meta name="theme-color" content="#1b1c1e">
+<script>try{if(localStorage.getItem("pours-theme")==="light"){document.documentElement.setAttribute("data-theme","light");document.querySelector('meta[name="theme-color"]').content="#f4f4f3"}}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
@@ -17,6 +18,12 @@
   --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
   color-scheme:dark;
+}
+:root[data-theme="light"]{
+  --bg:#f4f4f3; --surface:#ffffff; --ink:#1b1c1e; --muted:#5d6166; --line:#dadbdc;
+  --amber:#c8262c; --amber-ink:#ffffff; --char:#1b1c1e;
+  --ok:#2f6f4f; --warn:#8a5a00; --danger:#b3261e; --scrim:rgba(0,0,0,.4);
+  color-scheme:light;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);
@@ -137,7 +144,7 @@ body{margin:0;padding-top:max(20px,env(safe-area-inset-top,0px))}
     <div class="list" id="list" style="margin-top:18px"><div class="empty">Loading…</div></div>
   </div>
 
-  <div class="foot" id="who" hidden><span id="whoName"></span><button class="link" id="signOut">Sign out</button></div>
+  <div class="foot"><span id="who" hidden style="display:contents"><span id="whoName"></span><button class="link" id="signOut">Sign out</button><span aria-hidden="true">·</span></span><button class="link" id="themeBtn">Light mode</button></div>
 </div>
 <button class="btn primary fab" id="addBtn" hidden>+ Log a sample I'm giving</button>
 <div id="sheetRoot"></div>
@@ -438,6 +445,11 @@ $("signIn").addEventListener("click",async()=>{
   }
 });
 $("signOut").addEventListener("click",()=>signOut(auth));
+function applyTheme(t){const light=t==="light";if(light)document.documentElement.setAttribute("data-theme","light");else document.documentElement.removeAttribute("data-theme");
+  document.querySelector('meta[name="theme-color"]').content=light?"#f4f4f3":"#1b1c1e";$("themeBtn").textContent=light?"Dark mode":"Light mode";
+  try{localStorage.setItem("pours-theme",light?"light":"dark")}catch(e){}}
+$("themeBtn").onclick=()=>applyTheme(document.documentElement.getAttribute("data-theme")==="light"?"dark":"light");
+$("themeBtn").textContent=document.documentElement.getAttribute("data-theme")==="light"?"Dark mode":"Light mode";
 function stopListening(){S.unsubs.forEach(u=>{try{u()}catch(e){}});S.unsubs=[]}
 function showGate(msg){stopListening();closeSheet();$("app").hidden=true;$("addBtn").hidden=true;$("who").hidden=!auth.currentUser;$("gate").hidden=false;$("signIn").hidden=false;if(msg)$("gateMsg").textContent=msg}
 function reopen(){if(!S.openId)return;const ae=document.activeElement;if(ae&&(ae.tagName==="TEXTAREA"||ae.tagName==="INPUT"))return;
