@@ -4,27 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Pours</title>
-<meta name="theme-color" content="#3b2c22">
+<meta name="theme-color" content="#1b1c1e">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Layout: one narrow column like a tasting notebook; shelf tabs on top, sample "labels" as cards, a bottom sheet for detail. */
 :root{
-  --bg:#f3f1ee; --surface:#fffdfa; --ink:#231c16; --muted:#6f655c; --line:#ddd6ce;
-  --amber:#a8560f; --amber-ink:#fff8f0; --char:#3b2c22;
-  --ok:#2f6f4f; --warn:#8a5a00; --danger:#a3352a; --scrim:rgba(20,14,10,.45);
+  --bg:#1b1c1e; --surface:#26282b; --ink:#f3f3f2; --muted:#a0a3a8; --line:#3b3e42;
+  --amber:#ef4449; --amber-ink:#ffffff; --char:#f3f3f2;
+  --ok:#6cc39a; --warn:#e4b04f; --danger:#ff8a80; --scrim:rgba(0,0,0,.65);
   --display:"Zilla Slab",Rockwell,"Roboto Slab",Georgia,serif;
   --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#17120e; --surface:#211a15; --ink:#f1e7dc; --muted:#a8998a; --line:#3a2f27;
-  --amber:#e09347; --amber-ink:#1d130b; --char:#e8d7c4;
-  --ok:#6cc39a; --warn:#e4b04f; --danger:#ef7c6f; --scrim:rgba(0,0,0,.6); color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#17120e; --surface:#211a15; --ink:#f1e7dc; --muted:#a8998a; --line:#3a2f27;
-  --amber:#e09347; --amber-ink:#1d130b; --char:#e8d7c4;
-  --ok:#6cc39a; --warn:#e4b04f; --danger:#ef7c6f; --scrim:rgba(0,0,0,.6); color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 96px}
