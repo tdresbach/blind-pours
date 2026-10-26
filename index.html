@@ -266,21 +266,22 @@ function nextCode(){
   return ini+"-"+String((nums.length?Math.max(...nums):0)+1).padStart(2,"0");
 }
 
-function openAddSample(){
-  let color="Blue";const auto=nextCode();
-  sheet(`<div class="sheet-head"><h2>Log a sample</h2><button class="btn x" data-close>Close</button></div>
+function openAddSample(edit){
+  const k=edit?(S.keys[edit.id]||{}):{};
+  let color=edit?.stickerColor||"Blue";const auto=edit?(edit.code||""):nextCode();
+  sheet(`<div class="sheet-head"><h2>${edit?"Edit sample":"Log a sample"}</h2><button class="btn x" data-close>Close</button></div>
   <div class="field"><span class="lbl">Sticker color</span><div class="swatches" id="sw">${COLORS.map(([n,h])=>`<button class="sw" type="button" title="${n}" aria-label="${n}" aria-pressed="${n===color}" data-c="${n}" style="background:${h}"></button>`).join("")}</div></div>
   <div class="row">
-    <div class="field"><label for="f-text">Sticker mark</label><input id="f-text" placeholder="A, flower, star…" maxlength="20"></div>
-    <div class="field"><div class="lblrow"><label for="f-code">Sample code</label><span class="auto">Automatic</span></div>
+    <div class="field"><label for="f-text">Sticker mark</label><input id="f-text" placeholder="A, flower, star…" maxlength="20" value="${esc(edit?.stickerText||"")}"></div>
+    <div class="field"><div class="lblrow"><label for="f-code">Sample code</label>${edit?"":`<span class="auto">Automatic</span>`}</div>
       <div class="codeval" id="codeView"><span class="code" id="codeText">${esc(auto)}</span><button class="iconbtn" type="button" id="codeEdit" aria-label="Edit sample code">${PENCIL}</button></div>
       <input id="f-code" value="${esc(auto)}" maxlength="10" hidden></div>
   </div>
-  <div class="field"><label for="f-bottle">Bottle (only you see this)</label><input id="f-bottle" placeholder="1792 Single Barrel"></div>
-  <div class="field"><label for="f-details">Private details</label><input id="f-details" placeholder="Proof, barrel #, store pick, price"></div>
-  <div class="field"><label for="f-date">Date given</label><input id="f-date" type="date" value="${today()}"></div>
+  <div class="field"><label for="f-bottle">Bottle (only you see this)</label><input id="f-bottle" placeholder="1792 Single Barrel" value="${esc(k.bottle||"")}"></div>
+  <div class="field"><label for="f-details">Private details</label><input id="f-details" placeholder="Proof, barrel #, store pick, price" value="${esc(k.details||"")}"></div>
+  <div class="field"><label for="f-date">Date given</label><input id="f-date" type="date" value="${esc(edit?.givenOn||today())}"></div>
   <div class="status" id="f-status"></div>
-  <button class="btn primary" id="f-save">Save sample</button>`);
+  <button class="btn primary" id="f-save">${edit?"Save changes":"Save sample"}</button>`);
   $("codeEdit").onclick=()=>{$("codeView").hidden=true;$("f-code").hidden=false;$("f-code").focus();$("f-code").select()};
   $("sw").addEventListener("click",e=>{const b=e.target.closest(".sw");if(!b)return;color=b.dataset.c;
     document.querySelectorAll(".sw").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))});
@@ -290,8 +291,14 @@ function openAddSample(){
     if(!bottle){$("f-status").textContent="Add the bottle name so you can reveal it later.";return}
     $("f-save").disabled=true;$("f-status").textContent="Saving…";
     try{
-      const ref=await addDoc(collection(db,"samples"),{code,stickerColor:color,stickerHex:COLORS.find(c=>c[0]===color)[1],stickerText:text,
-        giverId:S.me,givenOn:$("f-date").value||today(),status:"with",emptied:false,createdAt:Date.now()});
+      const base={code,stickerColor:color,stickerHex:COLORS.find(c=>c[0]===color)[1],stickerText:text,givenOn:$("f-date").value||today()};
+      if(edit){
+        if(edit.status==="revealed")base.bottle=bottle;
+        await updateDoc(doc(db,"samples",edit.id),base);
+        await setDoc(keyRef(edit.id),{bottle,details:$("f-details").value.trim()});
+        openSample(edit.id);return;
+      }
+      const ref=await addDoc(collection(db,"samples"),{...base,giverId:S.me,status:"with",emptied:false,createdAt:Date.now()});
       await setDoc(keyRef(ref.id),{bottle,details:$("f-details").value.trim()});
       closeSheet();S.tab="theirs";render();
     }catch(e){$("f-save").disabled=false;$("f-status").textContent="Couldn't save: "+errText(e)}
@@ -304,8 +311,7 @@ function openSample(id){
   let bottleBox="";
   if(s.status==="revealed")bottleBox=`<div class="box"><span class="lbl">Revealed</span><div class="reveal-name">${esc(b)}</div>${mineGiven&&key.details?`<div class="note">${esc(key.details)}</div>`:""}</div>`;
   else if(mineGiven)bottleBox=`<div class="box"><span class="lbl">Bottle · only you can see this</span>
-    <input id="d-bottle" value="${esc(key.bottle||"")}" placeholder="Bottle name" aria-label="Bottle name"><input id="d-details" value="${esc(key.details||"")}" placeholder="Proof, barrel #, price" aria-label="Private details">
-    <div class="actions"><button class="btn" id="d-savekey">Save bottle</button></div></div>`;
+    <div class="secret">${key.bottle?esc(key.bottle):"<i>No bottle saved</i>"}</div>${key.details?`<div class="note">${esc(key.details)}</div>`:""}</div>`;
   else bottleBox=`<div class="box"><span class="lbl">Bottle</span><div class="note">Hidden until ${esc(nameOf(s.giverId))} reveals it.</div></div>`;
   const holder=mineGiven?otherName():"you";
   sheet(`<div class="sheet-head">${dot(s)}<div><h2>${esc(stickerName(s))}</h2><div class="code">${esc(s.code||"")} · from ${esc(nameOf(s.giverId))} · ${esc(fmtDate(s.givenOn))}</div></div><button class="btn x" data-close>Close</button></div>
@@ -318,11 +324,12 @@ function openSample(id){
   <div class="actions">
     ${mineGiven&&s.status!=="revealed"?`<button class="btn primary" id="d-reveal">Reveal to ${esc(otherName())}</button>`:""}
     ${mineGiven&&s.status==="revealed"?`<button class="btn" id="d-unreveal">Hide again</button>`:""}
-    ${mineGiven?`<button class="btn danger" id="d-del">Delete</button>`:""}</div>
+    ${mineGiven?`<button class="btn" id="d-edit">Edit</button><button class="btn danger" id="d-del">Delete</button>`:""}</div>
   <div id="d-confirm"></div>`);
   const st=$("d-status"), sref=doc(db,"samples",id), fail=e=>{st.textContent="Couldn't save: "+errText(e)};
   document.querySelectorAll("[data-t]").forEach(x=>x.onclick=()=>openTasting(x.dataset.t));
   $("d-empty").onclick=async()=>{try{await updateDoc(sref,s.emptied?{emptied:false,emptiedOn:""}:{emptied:true,emptiedOn:today()});closeSheet()}catch(e){fail(e)}};
+  if($("d-edit"))$("d-edit").onclick=()=>{S.openId=null;openAddSample(s)};
   if($("d-savekey"))$("d-savekey").onclick=async()=>{st.textContent="Saving…";
     try{await setDoc(keyRef(id),{bottle:$("d-bottle").value.trim(),details:$("d-details").value.trim()});st.textContent="Bottle saved."}catch(e){fail(e)}};
   if($("d-reveal"))$("d-reveal").onclick=()=>{
